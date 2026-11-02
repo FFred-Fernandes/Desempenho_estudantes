@@ -40,11 +40,18 @@ class MatriculaTurmaService:
         # Classifica com risco crítico quando frequência estiver abaixo de 75%.
         risco_falta = frequencia_inicial < 75.0
 
+        # REGRA 6: Consistência Temporal (frequência não pode ter data futura).
+        from services.avaliacao_service import AvaliacaoService
+        valida, res_data = AvaliacaoService.validar_data_registro(dados.get('data_registro'))
+        if not valida:
+            return {"erro": res_data}, 400
+
         nova_matricula = MatriculaTurma(
             estudante_id=estudante.id,
             turma_id=turma.id,
             frequencia_percentual=frequencia_inicial,
-            risco_falta=risco_falta
+            risco_falta=risco_falta,
+            data_registro=res_data
         )
         salva = MatriculaTurmaRepository.salvar(nova_matricula)
         return {"mensagem": "Matrícula realizada com sucesso!", "id": salva.id}, 201
@@ -59,7 +66,8 @@ class MatriculaTurmaService:
             "turma_id": m.turma_id,
             "frequencia_percentual": float(m.frequencia_percentual),
             "risco_falta": m.risco_falta,
-            "risco_nota": m.risco_nota
+            "risco_nota": m.risco_nota,
+            "data_registro": m.data_registro.strftime("%Y-%m-%d %H:%M:%S") if getattr(m, 'data_registro', None) else ""
         } for m in matriculas]
         return lista, 200
 
@@ -75,7 +83,8 @@ class MatriculaTurmaService:
             "turma_id": m.turma_id,
             "frequencia_percentual": float(m.frequencia_percentual),
             "risco_falta": m.risco_falta,
-            "risco_nota": m.risco_nota
+            "risco_nota": m.risco_nota,
+            "data_registro": m.data_registro.strftime("%Y-%m-%d %H:%M:%S") if getattr(m, 'data_registro', None) else ""
         }, 200
 
     @staticmethod
@@ -94,6 +103,14 @@ class MatriculaTurmaService:
         # O sistema não deve aceitar registro de frequências negativas ou superiores a 100%.
         if nova_frequencia < 0.0 or nova_frequencia > 100.0:
             return {"erro": "Violação da Regra 2 (Validação de Frequência): A frequência deve estar entre 0% e 100%."}, 400
+
+        # REGRA 6: Consistência Temporal (data da frequência não pode estar no futuro).
+        if 'data_registro' in dados and dados['data_registro']:
+            from services.avaliacao_service import AvaliacaoService
+            valida, res_data = AvaliacaoService.validar_data_registro(dados['data_registro'])
+            if not valida:
+                return {"erro": res_data}, 400
+            matricula.data_registro = res_data
 
         matricula.frequencia_percentual = nova_frequencia
 

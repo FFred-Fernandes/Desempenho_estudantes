@@ -27,7 +27,7 @@ class DisciplinaService:
         nova_disciplina = Disciplina(
             codigo=str(dados.get('codigo')).strip(),
             nome=res_nome,
-            total_avaliacoes_obrigatorias=dados.get('total_avaliacoes_obrigatorias', 3)
+            total_avaliacoes_obrigatorias=dados.get('total_avaliacoes_obrigatorias', 2)
         )
         salva = DisciplinaRepository.salvar(nova_disciplina)
         return {"mensagem": "Disciplina criada com sucesso!", "id": salva.id}, 201

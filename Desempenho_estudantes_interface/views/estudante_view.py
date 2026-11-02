@@ -181,7 +181,14 @@ class EstudanteView(tk.Frame):
             messagebox.showinfo("Sucesso", resp.get("mensagem"))
             self._limpar(); self._carregar_da_api()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao cadastrar."))
+            # Analisar mensagem de erro para identificar duplicidade
+            erro_msg = resp.get("erro", "Erro ao cadastrar.").lower()
+            if "matricula" in erro_msg:
+                messagebox.showerror("Erro", "Matrícula já cadastrada.")
+            elif "cpf" in erro_msg:
+                messagebox.showerror("Erro", "CPF já cadastrado.")
+            else:
+                messagebox.showerror("Erro", resp.get("erro", "Erro ao cadastrar."))
 
     def _atualizar(self):
         if not hasattr(self, "_id_selecionado"):

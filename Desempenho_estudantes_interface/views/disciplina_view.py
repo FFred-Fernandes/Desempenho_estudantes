@@ -29,7 +29,7 @@ class DisciplinaView(tk.Frame):
 
         tk.Label(frame_form, text="Avaliações obrigatórias:", bg="#f0f0f0").grid(row=1, column=0, sticky="w", pady=3)
         self.entry_avals = tk.Entry(frame_form, width=10)
-        self.entry_avals.insert(0, "3")
+        self.entry_avals.insert(0, "2")
         self.entry_avals.grid(row=1, column=1, padx=8)
 
         # ── Botões ──────────────────────────────────────────
@@ -89,7 +89,7 @@ class DisciplinaView(tk.Frame):
         dados = {
             "codigo": self.entry_codigo.get().strip(),
             "nome":   self.entry_nome.get().strip(),
-            "total_avaliacoes_obrigatorias": int(self.entry_avals.get() or 3)
+            "total_avaliacoes_obrigatorias": int(self.entry_avals.get() or 2)
         }
         if not dados["codigo"] or not dados["nome"]:
             messagebox.showwarning("Atenção", "Preencha Código e Nome.")
@@ -107,7 +107,7 @@ class DisciplinaView(tk.Frame):
             return
         dados = {
             "nome": self.entry_nome.get().strip(),
-            "total_avaliacoes_obrigatorias": int(self.entry_avals.get() or 3)
+            "total_avaliacoes_obrigatorias": int(self.entry_avals.get() or 2)
         }
         resp, status = api.atualizar_disciplina(self._id_selecionado, dados)
         if status == 200:
@@ -132,7 +132,7 @@ class DisciplinaView(tk.Frame):
     def _limpar(self):
         self.entry_codigo.delete(0, tk.END)
         self.entry_nome.delete(0, tk.END)
-        self.entry_avals.delete(0, tk.END); self.entry_avals.insert(0, "3")
+        self.entry_avals.delete(0, tk.END); self.entry_avals.insert(0, "2")
         if hasattr(self, "_id_selecionado"):
             del self._id_selecionado
 

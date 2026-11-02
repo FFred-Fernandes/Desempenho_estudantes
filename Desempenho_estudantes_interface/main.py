@@ -40,7 +40,7 @@ class App(tk.Tk):
         # Verifica se a API está rodando antes de abrir a interface
         try:
             import requests
-            r = requests.get("http://localhost:5000/", timeout=3)
+            r = requests.get("http://127.0.0.1:5000/", timeout=3)
             if r.status_code != 200:
                 raise ConnectionError
         except Exception:
@@ -159,21 +159,25 @@ class App(tk.Tk):
             self.tela_atual.pack_forget()
 
         # 3. Reutiliza ou instancia a tela no cache de memória
+        recem_criada = False
         if chave not in self.telas_cache:
             if chave == "inicio":
                 instancia = TelaCls(self.frame_conteudo, callback_navegacao=self._trocar_tela_instantanea)
             else:
                 instancia = TelaCls(self.frame_conteudo)
             self.telas_cache[chave] = instancia
+            recem_criada = True
 
         self.tela_atual = self.telas_cache[chave]
         self.tela_atual.pack(fill=tk.BOTH, expand=True)
 
-        # 4. Se a tela tiver método de recarregar dados da API, atualiza em segundo plano sem travar
-        if hasattr(self.tela_atual, "_carregar_da_api"):
-            self.after_idle(self.tela_atual._carregar_da_api)
-        elif hasattr(self.tela_atual, "_carregar") and chave != "inicio":
-            self.after_idle(self.tela_atual._carregar)
+        # 4. Atualiza os dados apenas se a tela já existia no cache
+        # (na primeira vez, a tela já carrega os dados em seu próprio construtor)
+        if not recem_criada:
+            if hasattr(self.tela_atual, "_carregar_da_api"):
+                self.after_idle(self.tela_atual._carregar_da_api)
+            elif hasattr(self.tela_atual, "_carregar") and chave != "inicio":
+                self.after_idle(self.tela_atual._carregar)
 
 
 # ──────────────────────────────────────────────────────────────

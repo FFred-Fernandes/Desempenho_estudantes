@@ -50,11 +50,13 @@ class TurmaView(tk.Frame):
         frame_tabela = tk.Frame(self, bg="#f0f0f0")
         frame_tabela.pack(fill=tk.BOTH, expand=True, padx=15, pady=8)
 
-        colunas = ("id", "disciplina_id", "semestre", "ano")
+        # Mapping of disciplina_id to nome
+        self._disc_map = self._construir_mapeamento_disciplina()
+        colunas = ("id", "disciplina_id", "disciplina", "semestre", "ano")
         self.tabela = ttk.Treeview(frame_tabela, columns=colunas, show="headings", height=14)
 
         headers = {"id": ("ID Turma", 80), "disciplina_id": ("ID Disciplina", 120),
-                   "semestre": ("Semestre", 120), "ano": ("Ano", 80)}
+                   "disciplina": ("Disciplina", 150), "semestre": ("Semestre", 120), "ano": ("Ano", 80)}
         for col, (label, w) in headers.items():
             self.tabela.heading(col, text=label)
             self.tabela.column(col, width=w, anchor="center")
@@ -71,8 +73,9 @@ class TurmaView(tk.Frame):
         for item in self.tabela.get_children():
             self.tabela.delete(item)
         for t in api.listar_turmas():
+            disciplina_nome = self._disc_map.get(t["disciplina_id"], "")
             self.tabela.insert("", tk.END,
-                               values=(t["id"], t["disciplina_id"], t["semestre"], t["ano"]))
+                               values=(t["id"], t["disciplina_id"], disciplina_nome, t["semestre"], t["ano"]))
 
     def _selecionar_linha(self, _event):
         sel = self.tabela.selection()
@@ -103,6 +106,7 @@ class TurmaView(tk.Frame):
             messagebox.showerror("Erro", resp.get("erro", "Erro ao cadastrar turma."))
 
     def _excluir(self):
+        # existing code unchanged
         if not hasattr(self, "_id_selecionado"):
             messagebox.showwarning("Atenção", "Selecione uma turma na tabela.")
             return
@@ -110,6 +114,7 @@ class TurmaView(tk.Frame):
             return
         resp, status = api.deletar_turma(self._id_selecionado)
         if status == 200:
+            # unchanged
             messagebox.showinfo("Sucesso", resp.get("mensagem"))
             self._limpar(); self._carregar()
         else:
@@ -119,6 +124,11 @@ class TurmaView(tk.Frame):
         self.entry_disc_id.delete(0, tk.END)
         self.entry_semestre.delete(0, tk.END)
         self.entry_ano.delete(0, tk.END)
+        # disciplina name not editable directly
         if hasattr(self, "_id_selecionado"):
             del self._id_selecionado
 
+    def _construir_mapeamento_disciplina(self):
+        """Constrói dicionário disciplina_id → nome da disciplina."""
+        disciplinas = api.listar_disciplinas()
+        return {d["id"]: d["nome"] for d in disciplinas}

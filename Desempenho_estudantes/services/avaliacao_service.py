@@ -18,6 +18,37 @@ class AvaliacaoService:
         MatriculaTurmaRepository.atualizar()
 
     @staticmethod
+    def validar_data_registro(data_str):
+        # REGRA 6: Consistência Temporal.
+        # O sistema não deve permitir o registro de notas ou frequências com datas futuras em relação à data atual do servidor.
+        # Permite datas atuais ou anteriores (datas retroativas).
+        if not data_str:
+            return True, datetime.now()
+
+        formatos = ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%d/%m/%Y', '%d/%m/%Y %H:%M:%S']
+        data_recebida = None
+        for fmt in formatos:
+            try:
+                data_recebida = datetime.strptime(str(data_str).strip(), fmt)
+                break
+            except ValueError:
+                continue
+
+        if not data_recebida:
+            return False, "Formato de data inválido. Use 'AAAA-MM-DD' (ex: 2026-10-25) ou 'DD/MM/AAAA'."
+
+        agora = datetime.now()
+        # Se a data for dia futuro em relação à data de hoje:
+        if data_recebida.date() > agora.date():
+            return False, "Violação da Regra 6 (Consistência Temporal): Não é permitido registrar notas ou frequências com datas futuras em relação à data atual do servidor."
+
+        # Se for no dia de hoje com horário futuro explícito:
+        if data_recebida.date() == agora.date() and data_recebida > agora:
+            return False, "Violação da Regra 6 (Consistência Temporal): O horário informado está no futuro em relação ao horário do servidor."
+
+        return True, data_recebida
+
+    @staticmethod
     def criar_avaliacao(dados):
         # PARTE 3: Operação de cadastro de avaliação (POST)
         matricula = MatriculaTurmaRepository.buscar_por_id(dados.get('matricula_turma_id'))
@@ -42,18 +73,11 @@ class AvaliacaoService:
         if valor_nota < 0.0 or valor_nota > 10.0:
             return {"erro": "Violação da Regra 1 (Validação de Notas): A nota deve estar estritamente entre 0.0 e 10.0."}, 400
             
-        data_registro = datetime.utcnow()
-        # REGRA 6: Consistência Temporal.
-        # O sistema não deve permitir o registro de notas com datas futuras em relação à data atual do servidor.
-        if 'data_registro' in dados and dados['data_registro']:
-            try:
-                data_recebida = datetime.strptime(dados['data_registro'], '%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                return {"erro": "Formato de data inválido. Use 'AAAA-MM-DD HH:MM:SS'."}, 400
-
-            if data_recebida > datetime.utcnow():
-                return {"erro": "Violação da Regra 6 (Consistência Temporal): A data de registro não pode estar no futuro."}, 400
-            data_registro = data_recebida
+        # REGRA 6: Consistência Temporal (permite datas anteriores e atual, bloqueia datas futuras).
+        valida, res_data = AvaliacaoService.validar_data_registro(dados.get('data_registro'))
+        if not valida:
+            return {"erro": res_data}, 400
+        data_registro = res_data
             
         nova_avaliacao = Avaliacao(
             matricula_turma_id=matricula.id,
@@ -79,7 +103,7 @@ class AvaliacaoService:
             "id": a.id, 
             "matricula_turma_id": a.matricula_turma_id, 
             "valor_nota": float(a.valor_nota), 
-            "data_registro": str(a.data_registro)
+            "data_registro": a.data_registro.strftime("%Y-%m-%d %H:%M:%S") if a.data_registro else ""
         } for a in avaliacoes]
         return lista, 200
 
@@ -93,7 +117,7 @@ class AvaliacaoService:
             "id": a.id,
             "matricula_turma_id": a.matricula_turma_id,
             "valor_nota": float(a.valor_nota),
-            "data_registro": str(a.data_registro)
+            "data_registro": a.data_registro.strftime("%Y-%m-%d %H:%M:%S") if a.data_registro else ""
         }, 200
 
     @staticmethod
@@ -104,15 +128,23 @@ class AvaliacaoService:
             return {"erro": "Avaliação não encontrada."}, 404
         
         # REGRA 1: Validação de Notas na atualização
-        try:
-            nova_nota = float(dados.get('valor_nota', avaliacao.valor_nota))
-        except (ValueError, TypeError):
-            return {"erro": "Nota inválida."}, 400
+        if 'valor_nota' in dados:
+            try:
+                nova_nota = float(dados.get('valor_nota', avaliacao.valor_nota))
+            except (ValueError, TypeError):
+                return {"erro": "Nota inválida."}, 400
 
-        if nova_nota < 0.0 or nova_nota > 10.0:
-            return {"erro": "Violação da Regra 1 (Validação de Notas): A nota deve estar estritamente entre 0.0 e 10.0."}, 400
-            
-        avaliacao.valor_nota = nova_nota
+            if nova_nota < 0.0 or nova_nota > 10.0:
+                return {"erro": "Violação da Regra 1 (Validação de Notas): A nota deve estar estritamente entre 0.0 e 10.0."}, 400
+            avaliacao.valor_nota = nova_nota
+
+        # REGRA 6: Consistência Temporal na atualização de data
+        if 'data_registro' in dados and dados['data_registro']:
+            valida, res_data = AvaliacaoService.validar_data_registro(dados['data_registro'])
+            if not valida:
+                return {"erro": res_data}, 400
+            avaliacao.data_registro = res_data
+
         AvaliacaoRepository.atualizar()
 
         # REGRA 5: Recalcula o risco por nota após a alteração

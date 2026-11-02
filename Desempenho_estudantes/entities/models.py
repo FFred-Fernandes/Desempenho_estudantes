@@ -26,12 +26,12 @@ class Disciplina(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(20), unique=True, nullable=False)
     nome = db.Column(db.String(100), nullable=False)
-    total_avaliacoes_obrigatorias = db.Column(db.Integer, nullable=False, default=3)
+    total_avaliacoes_obrigatorias = db.Column(db.Integer, nullable=False, default=2)
 
     turmas = db.relationship('Turma', backref='disciplina', lazy=True)
 
     # PARTE 3: Utilizar efetivamente conceitos de Orientação a Objetos (Construtores).
-    def __init__(self, codigo=None, nome=None, total_avaliacoes_obrigatorias=3, **kwargs):
+    def __init__(self, codigo=None, nome=None, total_avaliacoes_obrigatorias=2, **kwargs):
         super().__init__(**kwargs)
         self.codigo = codigo
         self.nome = nome
@@ -56,22 +56,25 @@ class Turma(db.Model):
 class MatriculaTurma(db.Model):
     __tablename__ = 'matriculas_turma'
     id = db.Column(db.Integer, primary_key=True)
-    estudante_id = db.Column('estudantes_id', db.Integer, db.ForeignKey('estudantes.id'), nullable=False)
+    estudante_id = db.Column(db.Integer, db.ForeignKey('estudantes.id'), nullable=False)
     turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=False)
-    frequencia_percentual = db.Column('frequencia_percetual', db.Numeric(5, 2), nullable=False, default=100.00)
+    frequencia_percentual = db.Column(db.Numeric(5, 2), nullable=False, default=100.00)
     risco_falta = db.Column(db.Boolean, nullable=False, default=False)
     risco_nota = db.Column(db.Boolean, nullable=False, default=False)
+    data_registro = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
 
     avaliacoes = db.relationship('Avaliacao', backref='matricula_turma', lazy=True)
 
     # PARTE 3: Utilizar efetivamente conceitos de Orientação a Objetos (Construtores).
-    def __init__(self, estudante_id=None, turma_id=None, frequencia_percentual=100.00, risco_falta=False, risco_nota=False, **kwargs):
+    def __init__(self, estudante_id=None, turma_id=None, frequencia_percentual=100.00, risco_falta=False, risco_nota=False, data_registro=None, **kwargs):
         super().__init__(**kwargs)
         self.estudante_id = estudante_id
         self.turma_id = turma_id
         self.frequencia_percentual = frequencia_percentual
         self.risco_falta = risco_falta
         self.risco_nota = risco_nota
+        if data_registro:
+            self.data_registro = data_registro
 
 class Avaliacao(db.Model):
     __tablename__ = 'avaliacoes'
