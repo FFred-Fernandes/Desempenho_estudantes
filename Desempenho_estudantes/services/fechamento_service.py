@@ -26,7 +26,7 @@ class FechamentoService:
             # REGRA 9: Verifica se 100% das notas obrigatórias foram lançadas
             if len(matricula.avaliacoes) < avaliacoes_exigidas:
                 return {
-                    "erro": "Violação da Regra 9 (Pré-requisito de Análise Final): Fechamento bloqueado. É obrigatório ter 100% das notas lançadas para alunos ativos.",
+                    "erro": f"R9: Fechamento bloqueado. O estudante '{matricula.estudante.nome}' possui apenas {len(matricula.avaliacoes)} de {avaliacoes_exigidas} notas exigidas. É obrigatório ter 100% das notas lançadas para alunos ativos.",
                     "estudante": matricula.estudante.nome,
                     "notas_lancadas": len(matricula.avaliacoes),
                     "notas_exigidas": avaliacoes_exigidas

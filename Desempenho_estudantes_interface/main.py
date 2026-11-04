@@ -24,7 +24,7 @@ class App(tk.Tk):
     def __init__(self):
         # Construtor: inicializa a janela principal (herança de tk.Tk)
         super().__init__()
-        self.title("Sistema de Análise de Desempenho de Estudantes | PAV")
+        self.title("Sistema de Análise de Desempenho de Estudantes")
         self.geometry("1120x700")
         self.resizable(True, True)
         self.configure(bg="#2c3e50")
@@ -64,14 +64,6 @@ class App(tk.Tk):
             bg="#1a252f",
             fg="#ecf0f1"
         ).pack(side=tk.LEFT, padx=20)
-
-        tk.Label(
-            frame_header,
-            text="Programação Avançada — PAV",
-            font=("Helvetica", 10),
-            bg="#1a252f",
-            fg="#95a5a6"
-        ).pack(side=tk.RIGHT, padx=20)
 
         # ── Container principal (sidebar + conteúdo) ────────
         frame_main = tk.Frame(self, bg="#2c3e50")

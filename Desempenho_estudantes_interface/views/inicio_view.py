@@ -23,7 +23,7 @@ class InicioView(tk.Frame):
 
         tk.Label(
             frame_banner,
-            text="Plataforma de Gestão e Monitoramento de Alunos, Turmas, Frequências e Notas — Disciplina PAV",
+            text="Plataforma de Gestão e Monitoramento de Alunos, Turmas, Frequências e Notas",
             font=("Helvetica", 12),
             bg="#1e293b",
             fg="#94a3b8"

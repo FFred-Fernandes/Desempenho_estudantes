@@ -92,10 +92,6 @@ class EstudanteView(tk.Frame):
             self.tabela.heading(col, text=label)
             self.tabela.column(col, width=w, anchor="center")
 
-        # Configurações de cores:
-        # - Aluno inativo no sistema: Vermelho
-        # - Aluno ativo no sistema com status Trancado/Evasão: Cinza
-        # - Aluno ativo no sistema com status Ativo: Verde
         self.tabela.tag_configure("aluno_inativo", background="#fee2e2", foreground="#7f1d1d")
         self.tabela.tag_configure("aluno_afastado", background="#e2e8f0", foreground="#334155")
         self.tabela.tag_configure("aluno_ativo", background="#dcfce7", foreground="#14532d")
@@ -109,12 +105,10 @@ class EstudanteView(tk.Frame):
         self._carregar_da_api()
 
     def _carregar_da_api(self):
-        # Busca da API apenas quando abre a tela ou clica em Atualizar Lista
         self._lista_estudantes_cache = api.listar_estudantes()
         self._aplicar_filtro_tabela()
 
     def _aplicar_filtro_tabela(self):
-        # Filtragem instantânea na memória (sem chamar a rede)
         for item in self.tabela.get_children():
             self.tabela.delete(item)
         
@@ -123,7 +117,6 @@ class EstudanteView(tk.Frame):
             esta_ativo = e.get("ativo", True)
             status_acad = e.get("status", "Ativo")
             
-            # Filtro condicional: Todos | Apenas Ativos | Apenas Inativos
             if filtro == "Ativos" and not esta_ativo:
                 continue
             if filtro == "Inativos" and esta_ativo:
@@ -131,10 +124,6 @@ class EstudanteView(tk.Frame):
 
             situacao_texto = "Ativo" if esta_ativo else "Inativo"
 
-            # Definição de cores:
-            # 1. Inativo no sistema -> Vermelho
-            # 2. Ativo no sistema mas Trancado ou Evasão -> Cinza
-            # 3. Ativo cursando -> Verde
             if not esta_ativo:
                 tag_cor = "aluno_inativo"
             elif status_acad in ["Trancado", "Evasão"]:
@@ -178,17 +167,11 @@ class EstudanteView(tk.Frame):
             return
         resp, status = api.cadastrar_estudante(dados)
         if status == 201:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar_da_api()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Estudante cadastrado com sucesso!"))
+            self._limpar()
+            self._carregar_da_api()
         else:
-            # Analisar mensagem de erro para identificar duplicidade
-            erro_msg = resp.get("erro", "Erro ao cadastrar.").lower()
-            if "matricula" in erro_msg:
-                messagebox.showerror("Erro", "Matrícula já cadastrada.")
-            elif "cpf" in erro_msg:
-                messagebox.showerror("Erro", "CPF já cadastrado.")
-            else:
-                messagebox.showerror("Erro", resp.get("erro", "Erro ao cadastrar."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao cadastrar."))
 
     def _atualizar(self):
         if not hasattr(self, "_id_selecionado"):
@@ -197,10 +180,11 @@ class EstudanteView(tk.Frame):
         dados = {"nome": self.entry_nome.get().strip(), "status": self.combo_status.get()}
         resp, status = api.atualizar_estudante(self._id_selecionado, dados)
         if status == 200:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar_da_api()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Estudante atualizado com sucesso!"))
+            self._limpar()
+            self._carregar_da_api()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao atualizar."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao atualizar."))
 
     def _inativar(self):
         if not hasattr(self, "_id_selecionado"):
@@ -210,10 +194,11 @@ class EstudanteView(tk.Frame):
             return
         resp, status = api.deletar_estudante(self._id_selecionado)
         if status == 200:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar_da_api()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Estudante inativado com sucesso."))
+            self._limpar()
+            self._carregar_da_api()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao inativar."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao inativar."))
 
     def _limpar(self):
         self.entry_nome.delete(0, tk.END)

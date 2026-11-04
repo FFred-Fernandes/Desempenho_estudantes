@@ -26,7 +26,7 @@ class EstudanteService:
         # PARTE 3: Operação de cadastro (POST)
         nome = dados.get('nome')
         cpf = dados.get('cpf')
-        matricula = dados.get('matricula')
+        matricula = str(dados.get('matricula', '')).strip()
 
         valido_nome, res_nome = EstudanteService.validar_nome(nome)
         if not valido_nome:
@@ -38,14 +38,17 @@ class EstudanteService:
 
         cpf_formatado = f"{res_cpf[:3]}.{res_cpf[3:6]}.{res_cpf[6:9]}-{res_cpf[9:]}"
 
-        # REGRA 3: Prevenção de Duplicidade - Identificação única do estudante por CPF
+        # REGRA 3: Prevenção de Duplicidade - Identificação única do estudante por CPF ou Matrícula
         if EstudanteRepository.buscar_por_cpf(cpf_formatado) or EstudanteRepository.buscar_por_cpf(res_cpf):
-            return {"erro": "Violação da Regra 3 (Prevenção de Duplicidade): Estudante com este CPF já está cadastrado."}, 400
+            return {"erro": "R3: CPF já cadastrado no sistema."}, 400
+
+        if matricula and EstudanteRepository.buscar_por_matricula(matricula):
+            return {"erro": "R3: Matrícula já cadastrada no sistema."}, 400
         
         novo_estudante = Estudante(
             nome=res_nome,
             cpf=cpf_formatado,
-            matricula=str(matricula).strip()
+            matricula=matricula
         )
         salvo = EstudanteRepository.salvar(novo_estudante)
         return {"mensagem": "Estudante criado com sucesso!", "id": salvo.id}, 201
@@ -113,4 +116,4 @@ class EstudanteService:
         # REGRA 8: Integridade Histórica.
         # Não remove fisicamente do banco de dados para preservar histórico e avaliações.
         EstudanteRepository.inativar(estudante)
-        return {"mensagem": "Estudante inativado (exclusão lógica / Regra 8) com sucesso."}, 200
+        return {"mensagem": "R8: Estudante inativado (exclusão lógica) com sucesso."}, 200

@@ -30,7 +30,7 @@ class AnaliseView(tk.Frame):
                   text="🔍  Verificar Anomalia (Regra 7)",
                   bg="#8e44ad", fg="white",
                   font=("Helvetica", 10, "bold"),
-                  width=30, cursor="hand2",
+                  width=32, cursor="hand2",
                   command=self._verificar_anomalia
                   ).pack(pady=6)
 
@@ -38,7 +38,7 @@ class AnaliseView(tk.Frame):
                   text="🔒  Fechar Semestre (Regra 9)",
                   bg="#c0392b", fg="white",
                   font=("Helvetica", 10, "bold"),
-                  width=30, cursor="hand2",
+                  width=32, cursor="hand2",
                   command=self._fechar_semestre
                   ).pack(pady=6)
 
@@ -57,7 +57,7 @@ class AnaliseView(tk.Frame):
 
     def _get_turma_id(self):
         try:
-            return int(self.entry_turma_id.get())
+            return int(self.entry_turma_id.get().strip())
         except ValueError:
             messagebox.showwarning("Atenção", "Digite um ID de turma válido (número inteiro).")
             return None
@@ -66,7 +66,6 @@ class AnaliseView(tk.Frame):
         # Formata e exibe o dicionário de resposta da API na área de texto
         self.texto_resultado.config(state="normal")
         self.texto_resultado.delete("1.0", tk.END)
-        # Estrutura de repetição (for) para percorrer cada chave do resultado
         for chave, valor in dados.items():
             self.texto_resultado.insert(tk.END, f"  {chave:<30}: {valor}\n")
         self.texto_resultado.config(state="disabled")
@@ -79,28 +78,32 @@ class AnaliseView(tk.Frame):
         resp, status = api.verificar_anomalia(turma_id)
         self._exibir_resultado(resp)
 
-        # Estrutura de condição: aviso visual se anomalia for detectada
         if status == 200 and resp.get("alerta_anomalia"):
             messagebox.showwarning(
-                "⚠ ANOMALIA DETECTADA",
-                f"A média da turma {turma_id} está abaixo de 30%!\n"
-                f"Média: {resp.get('media_turma', 'N/A')}\n"
-                "Verifique a dificuldade da prova ou o ensino!"
+                "⚠ R7: ANOMALIA DETECTADA",
+                f"R7: A média da turma {turma_id} está abaixo de 30%!\n"
+                f"Média apurada: {resp.get('media_turma', 'N/A')}\n"
+                "Possível anomalia na dificuldade da prova ou ensino."
             )
+        elif status == 200:
+            messagebox.showinfo(
+                "Análise Concluída",
+                resp.get("mensagem", "Desempenho da turma dentro da normalidade.")
+            )
+        else:
+            messagebox.showerror("Erro na Análise", resp.get("erro", "Erro ao verificar anomalia."))
 
     def _fechar_semestre(self):
         # REGRA 9: Pré-requisito de Análise Final
         turma_id = self._get_turma_id()
         if turma_id is None:
             return
-        if not messagebox.askyesno("Confirmar", f"Deseja fechar o semestre da Turma {turma_id}?\nEsta ação verificará se 100% das notas foram lançadas."):
+        if not messagebox.askyesno("Confirmar Fechamento", f"Deseja fechar o semestre da Turma {turma_id}?\nEsta ação exigirá 100% das notas lançadas para alunos ativos (Regra 9)."):
             return
         resp, status = api.fechar_semestre(turma_id)
         self._exibir_resultado(resp)
 
-        # Condição para exibir mensagem de sucesso ou erro
         if status == 200:
-            messagebox.showinfo("Semestre Fechado", resp.get("mensagem", "Fechamento concluído!"))
+            messagebox.showinfo("Semestre Fechado", resp.get("mensagem", "Fechamento concluído com sucesso!"))
         else:
-            messagebox.showerror("Fechamento Bloqueado", resp.get("erro", "Erro no fechamento."))
-
+            messagebox.showerror("R9: Fechamento Bloqueado", resp.get("erro", "Erro no fechamento do semestre."))

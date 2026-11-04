@@ -80,7 +80,7 @@ class DisciplinaService:
         # O sistema não deve permitir a exclusão (DELETE no banco) de uma disciplina que já possua histórico/turmas vinculadas.
         if len(disciplina.turmas) > 0:
             return {
-                "erro": "Violação da Regra 8 (Integridade Histórica): A disciplina possui turmas/histórico vinculado e não pode ser excluída fisicamente."
+                "erro": "R8: Não é permitido excluir disciplina que possui turmas/histórico vinculado (Integridade Histórica)."
             }, 400
         
         DisciplinaRepository.deletar(disciplina)

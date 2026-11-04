@@ -40,11 +40,11 @@ class AvaliacaoService:
         agora = datetime.now()
         # Se a data for dia futuro em relação à data de hoje:
         if data_recebida.date() > agora.date():
-            return False, "Violação da Regra 6 (Consistência Temporal): Não é permitido registrar notas ou frequências com datas futuras em relação à data atual do servidor."
+            return False, "R6: Não é permitido registrar notas ou frequências com datas futuras em relação à data atual do servidor."
 
         # Se for no dia de hoje com horário futuro explícito:
         if data_recebida.date() == agora.date() and data_recebida > agora:
-            return False, "Violação da Regra 6 (Consistência Temporal): O horário informado está no futuro em relação ao horário do servidor."
+            return False, "R6: O horário informado está no futuro em relação ao horário do servidor."
 
         return True, data_recebida
 
@@ -60,7 +60,7 @@ class AvaliacaoService:
         estudante = matricula.estudante
         if estudante.status in ['Evasão', 'Trancado']:
             return {
-                "erro": f"Violação da Regra 10 (Proteção de Avaliação): Não é permitido inserir notas para estudante com status '{estudante.status}'."
+                "erro": f"R10: Não é permitido inserir notas para estudante com status '{estudante.status}' (Proteção de Avaliação)."
             }, 400
         
         # REGRA 1: Validação de Notas.
@@ -68,10 +68,10 @@ class AvaliacaoService:
         try:
             valor_nota = float(dados.get('valor_nota', -1))
         except (ValueError, TypeError):
-            return {"erro": "Nota inválida."}, 400
+            return {"erro": "Nota inválida. Digite um valor numérico entre 0.0 e 10.0."}, 400
 
         if valor_nota < 0.0 or valor_nota > 10.0:
-            return {"erro": "Violação da Regra 1 (Validação de Notas): A nota deve estar estritamente entre 0.0 e 10.0."}, 400
+            return {"erro": "R1: A nota deve estar entre 0.0 e 10.0 (Validação de Notas)."}, 400
             
         # REGRA 6: Consistência Temporal (permite datas anteriores e atual, bloqueia datas futuras).
         valida, res_data = AvaliacaoService.validar_data_registro(dados.get('data_registro'))
@@ -132,10 +132,10 @@ class AvaliacaoService:
             try:
                 nova_nota = float(dados.get('valor_nota', avaliacao.valor_nota))
             except (ValueError, TypeError):
-                return {"erro": "Nota inválida."}, 400
+                return {"erro": "Nota inválida. Digite um valor numérico entre 0.0 e 10.0."}, 400
 
             if nova_nota < 0.0 or nova_nota > 10.0:
-                return {"erro": "Violação da Regra 1 (Validação de Notas): A nota deve estar estritamente entre 0.0 e 10.0."}, 400
+                return {"erro": "R1: A nota deve estar entre 0.0 e 10.0 (Validação de Notas)."}, 400
             avaliacao.valor_nota = nova_nota
 
         # REGRA 6: Consistência Temporal na atualização de data

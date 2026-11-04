@@ -13,8 +13,9 @@ class MatriculaTurmaService:
         if not estudante or not turma:
             return {"erro": "Estudante ou Turma não encontrados."}, 404
             
+        # REGRA 8: Estudante inativo (exclusão lógica) não pode ser matriculado
         if not estudante.ativo:
-            return {"erro": "Não é possível matricular estudante inativo."}, 400
+            return {"erro": "R8: Não é possível matricular estudante inativo no sistema."}, 400
 
         # REGRA 3: Prevenção de Duplicidade.
         # O sistema não deve permitir que o aluno seja matriculado mais de uma vez
@@ -27,14 +28,18 @@ class MatriculaTurmaService:
         )
         if ja_matriculado:
             return {
-                "erro": "Violação da Regra 3 (Prevenção de Duplicidade): O aluno já está matriculado nesta mesma disciplina durante o semestre letivo atual."
+                "erro": "R3: O aluno já está matriculado nesta mesma disciplina durante o semestre letivo atual."
             }, 400
 
-        frequencia_inicial = float(dados.get('frequencia_percentual', 100.00))
+        try:
+            frequencia_inicial = float(dados.get('frequencia_percentual', 100.00))
+        except (ValueError, TypeError):
+            return {"erro": "Frequência inválida. Digite um valor numérico."}, 400
+
         # REGRA 2: Validação de Frequência.
         # Não aceitar frequências negativas ou superiores a 100%.
         if frequencia_inicial < 0.0 or frequencia_inicial > 100.0:
-            return {"erro": "Violação da Regra 2 (Validação de Frequência): A frequência não pode ser negativa nem superior a 100%."}, 400
+            return {"erro": "R2: A frequência não pode ser inferior a 0% nem superior a 100%."}, 400
 
         # REGRA 4: Classificação Automática de Risco por Falta.
         # Classifica com risco crítico quando frequência estiver abaixo de 75%.
@@ -97,12 +102,12 @@ class MatriculaTurmaService:
         try:
             nova_frequencia = float(dados.get('frequencia_percentual', matricula.frequencia_percentual))
         except (ValueError, TypeError):
-            return {"erro": "Frequência inválida."}, 400
+            return {"erro": "Frequência inválida. Digite um valor numérico."}, 400
 
         # REGRA 2: Validação de Frequência.
         # O sistema não deve aceitar registro de frequências negativas ou superiores a 100%.
         if nova_frequencia < 0.0 or nova_frequencia > 100.0:
-            return {"erro": "Violação da Regra 2 (Validação de Frequência): A frequência deve estar entre 0% e 100%."}, 400
+            return {"erro": "R2: A frequência não pode ser inferior a 0% nem superior a 100%."}, 400
 
         # REGRA 6: Consistência Temporal (data da frequência não pode estar no futuro).
         if 'data_registro' in dados and dados['data_registro']:

@@ -8,6 +8,11 @@ class EstudanteRepository:
         return Estudante.query.filter_by(cpf=cpf).first()
 
     @staticmethod
+    def buscar_por_matricula(matricula):
+        # Apoia a REGRA 3 (Prevenção de Duplicidade): Busca o aluno para garantir matrícula única.
+        return Estudante.query.filter_by(matricula=matricula).first()
+
+    @staticmethod
     def buscar_por_id(id):
         return Estudante.query.get(id)
 

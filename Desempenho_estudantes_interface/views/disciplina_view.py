@@ -37,9 +37,9 @@ class DisciplinaView(tk.Frame):
         frame_btns.pack(pady=5)
 
         botoes = [
-            ("➕  Cadastrar",   "#27ae60", self._cadastrar),
-            ("✏️   Atualizar",   "#2980b9", self._atualizar),
-            ("🗑️   Excluir",     "#e74c3c", self._excluir),
+            ("➕  Cadastrar",       "#27ae60", self._cadastrar),
+            ("✏️   Atualizar",       "#2980b9", self._atualizar),
+            ("🗑️   Excluir",         "#e74c3c", self._excluir),
             ("🔄  Atualizar Lista", "#7f8c8d", self._carregar),
         ]
         for texto, cor, cmd in botoes:
@@ -54,8 +54,12 @@ class DisciplinaView(tk.Frame):
         colunas = ("id", "codigo", "nome", "avaliacoes_obrigatorias")
         self.tabela = ttk.Treeview(frame_tabela, columns=colunas, show="headings", height=14)
 
-        headers = {"id": ("ID", 50), "codigo": ("Código", 100),
-                   "nome": ("Nome", 280), "avaliacoes_obrigatorias": ("Avals. Obrigatórias", 150)}
+        headers = {
+            "id": ("ID", 50),
+            "codigo": ("Código", 100),
+            "nome": ("Nome", 280),
+            "avaliacoes_obrigatorias": ("Avals. Obrigatórias", 150)
+        }
         for col, (label, w) in headers.items():
             self.tabela.heading(col, text=label)
             self.tabela.column(col, width=w, anchor="center")
@@ -92,14 +96,15 @@ class DisciplinaView(tk.Frame):
             "total_avaliacoes_obrigatorias": int(self.entry_avals.get() or 2)
         }
         if not dados["codigo"] or not dados["nome"]:
-            messagebox.showwarning("Atenção", "Preencha Código e Nome.")
+            messagebox.showwarning("Atenção", "Preencha Código e Nome da disciplina.")
             return
         resp, status = api.cadastrar_disciplina(dados)
         if status == 201:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Disciplina cadastrada com sucesso!"))
+            self._limpar()
+            self._carregar()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao cadastrar."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao cadastrar disciplina."))
 
     def _atualizar(self):
         if not hasattr(self, "_id_selecionado"):
@@ -111,23 +116,26 @@ class DisciplinaView(tk.Frame):
         }
         resp, status = api.atualizar_disciplina(self._id_selecionado, dados)
         if status == 200:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Disciplina atualizada com sucesso!"))
+            self._limpar()
+            self._carregar()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao atualizar."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao atualizar disciplina."))
 
     def _excluir(self):
         if not hasattr(self, "_id_selecionado"):
             messagebox.showwarning("Atenção", "Selecione uma disciplina na tabela.")
             return
+        id_para_excluir = self._id_selecionado
         if not messagebox.askyesno("Confirmar", "Deseja excluir esta disciplina?"):
             return
-        resp, status = api.deletar_disciplina(self._id_selecionado)
+        resp, status = api.deletar_disciplina(id_para_excluir)
         if status == 200:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Disciplina excluída com sucesso."))
+            self._limpar()
+            self._carregar()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao excluir."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao excluir disciplina."))
 
     def _limpar(self):
         self.entry_codigo.delete(0, tk.END)
@@ -135,4 +143,3 @@ class DisciplinaView(tk.Frame):
         self.entry_avals.delete(0, tk.END); self.entry_avals.insert(0, "2")
         if hasattr(self, "_id_selecionado"):
             del self._id_selecionado
-

@@ -40,7 +40,13 @@ class TurmaService:
     def listar_turmas():
         # PARTE 3: Operação de seleção geral de turmas (GET)
         turmas = TurmaRepository.buscar_todas()
-        lista = [{"id": t.id, "disciplina_id": t.disciplina_id, "semestre": t.semestre, "ano": t.ano} for t in turmas]
+        lista = [{
+            "id": t.id, 
+            "disciplina_id": t.disciplina_id, 
+            "disciplina_nome": t.disciplina.nome if getattr(t, 'disciplina', None) else "",
+            "semestre": t.semestre, 
+            "ano": t.ano
+        } for t in turmas]
         return lista, 200
 
     @staticmethod
@@ -52,6 +58,7 @@ class TurmaService:
         return {
             "id": t.id,
             "disciplina_id": t.disciplina_id,
+            "disciplina_nome": t.disciplina.nome if getattr(t, 'disciplina', None) else "",
             "semestre": t.semestre,
             "ano": t.ano
         }, 200
@@ -89,7 +96,7 @@ class TurmaService:
         # Não permite deletar turma se ela já possuir matrículas vinculadas.
         if len(turma.matriculas) > 0:
             return {
-                "erro": "Violação da Regra 8 (Integridade Histórica): A turma possui matrículas/histórico vinculado e não pode ser excluída fisicamente."
+                "erro": "R8: Não é permitido excluir turma que possui matrículas/histórico vinculado (Integridade Histórica)."
             }, 400
 
         TurmaRepository.deletar(turma)
@@ -134,7 +141,7 @@ class TurmaService:
             "limite_anomalia_30_porcento": limite_anomalia,
             "alerta_anomalia": anomalia_detectada,
             "mensagem": (
-                "ALERTA ANALÍTICO (Regra 7): Média geral da turma inferior a 30% do valor da prova! Possível anomalia na dificuldade da prova ou ensino."
+                "R7: Alerta de Anomalia na Turma - Média geral da turma inferior a 30% do valor da prova!"
                 if anomalia_detectada
                 else "Desempenho da turma dentro da normalidade (sem anomalia detectada)."
             )

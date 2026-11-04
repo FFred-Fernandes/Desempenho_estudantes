@@ -6,6 +6,7 @@ import api_client as api
 class TurmaView(tk.Frame):
     def __init__(self, master):
         super().__init__(master, bg="#f0f0f0")
+        self._disc_map = {}
         self._construir_tela()
 
     def _construir_tela(self):
@@ -23,6 +24,7 @@ class TurmaView(tk.Frame):
         self.entry_disc_id = tk.Entry(frame_form, width=10)
         self.entry_disc_id.grid(row=0, column=1, padx=8)
 
+        # Semestre aceita apenas 1 ou 2 (Combobox para garantir validação)
         tk.Label(frame_form, text="Semestre (1/2):", bg="#f0f0f0").grid(row=0, column=2, sticky="w")
         self.combo_semestre = ttk.Combobox(frame_form, width=12, values=["1", "2"], state="readonly")
         self.combo_semestre.set("1")
@@ -37,8 +39,8 @@ class TurmaView(tk.Frame):
         frame_btns.pack(pady=5)
 
         botoes = [
-            ("➕  Cadastrar",   "#27ae60", self._cadastrar),
-            ("🗑️   Excluir",     "#e74c3c", self._excluir),
+            ("➕  Cadastrar",       "#27ae60", self._cadastrar),
+            ("🗑️   Excluir",         "#e74c3c", self._excluir),
             ("🔄  Atualizar Lista", "#7f8c8d", self._carregar),
         ]
         for texto, cor, cmd in botoes:
@@ -50,13 +52,17 @@ class TurmaView(tk.Frame):
         frame_tabela = tk.Frame(self, bg="#f0f0f0")
         frame_tabela.pack(fill=tk.BOTH, expand=True, padx=15, pady=8)
 
-        # Mapping of disciplina_id to nome
-        self._disc_map = self._construir_mapeamento_disciplina()
+        # Colunas: id, disciplina_id, disciplina_nome, semestre, ano
         colunas = ("id", "disciplina_id", "disciplina", "semestre", "ano")
         self.tabela = ttk.Treeview(frame_tabela, columns=colunas, show="headings", height=14)
 
-        headers = {"id": ("ID Turma", 80), "disciplina_id": ("ID Disciplina", 120),
-                   "disciplina": ("Disciplina", 150), "semestre": ("Semestre", 120), "ano": ("Ano", 80)}
+        headers = {
+            "id": ("ID Turma", 80),
+            "disciplina_id": ("ID Disciplina", 120),
+            "disciplina": ("Disciplina", 180),
+            "semestre": ("Semestre", 100),
+            "ano": ("Ano", 80)
+        }
         for col, (label, w) in headers.items():
             self.tabela.heading(col, text=label)
             self.tabela.column(col, width=w, anchor="center")
@@ -70,22 +76,31 @@ class TurmaView(tk.Frame):
         self._carregar()
 
     def _carregar(self):
+        # Sempre atualiza o mapeamento de disciplinas ao carregar
+        self._disc_map = self._construir_mapeamento_disciplina()
+
         for item in self.tabela.get_children():
             self.tabela.delete(item)
-        for t in api.listar_turmas():
-            disciplina_nome = self._disc_map.get(t["disciplina_id"], "")
+
+        turmas = api.listar_turmas()
+        for t in turmas:
+            d_id = t["disciplina_id"]
+            disciplina_nome = t.get("disciplina_nome") or self._disc_map.get(d_id) or self._disc_map.get(str(d_id)) or ""
             self.tabela.insert("", tk.END,
-                               values=(t["id"], t["disciplina_id"], disciplina_nome, t["semestre"], t["ano"]))
+                               values=(t["id"], d_id, disciplina_nome, t["semestre"], t["ano"]))
 
     def _selecionar_linha(self, _event):
         sel = self.tabela.selection()
         if not sel:
             return
         v = self.tabela.item(sel[0], "values")
-        self.entry_disc_id.delete(0, tk.END);  self.entry_disc_id.insert(0, v[1])
-        if v[2] in ["1", "2"]:
-            self.combo_semestre.set(v[2])
-        self.entry_ano.delete(0, tk.END);      self.entry_ano.insert(0, v[3])
+        self.entry_disc_id.delete(0, tk.END)
+        self.entry_disc_id.insert(0, v[1])
+        if len(v) > 3 and str(v[3]) in ["1", "2"]:
+            self.combo_semestre.set(str(v[3]))
+        if len(v) > 4:
+            self.entry_ano.delete(0, tk.END)
+            self.entry_ano.insert(0, v[4])
         self._id_selecionado = v[0]
 
     def _cadastrar(self):
@@ -100,35 +115,42 @@ class TurmaView(tk.Frame):
             return
         resp, status = api.cadastrar_turma(dados)
         if status == 201:
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Turma cadastrada com sucesso!"))
+            self._limpar()
+            self._carregar()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao cadastrar turma."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao cadastrar turma."))
 
     def _excluir(self):
-        # existing code unchanged
         if not hasattr(self, "_id_selecionado"):
             messagebox.showwarning("Atenção", "Selecione uma turma na tabela.")
             return
+        id_para_excluir = self._id_selecionado
         if not messagebox.askyesno("Confirmar", "Deseja excluir esta turma?"):
             return
-        resp, status = api.deletar_turma(self._id_selecionado)
+        resp, status = api.deletar_turma(id_para_excluir)
         if status == 200:
-            # unchanged
-            messagebox.showinfo("Sucesso", resp.get("mensagem"))
-            self._limpar(); self._carregar()
+            messagebox.showinfo("Sucesso", resp.get("mensagem", "Turma excluída com sucesso."))
+            self._limpar()
+            self._carregar()
         else:
-            messagebox.showerror("Erro", resp.get("erro", "Erro ao excluir."))
+            messagebox.showerror("Erro de Validação", resp.get("erro", "Erro ao excluir turma."))
 
     def _limpar(self):
         self.entry_disc_id.delete(0, tk.END)
-        self.entry_semestre.delete(0, tk.END)
+        self.combo_semestre.set("1")
         self.entry_ano.delete(0, tk.END)
-        # disciplina name not editable directly
         if hasattr(self, "_id_selecionado"):
             del self._id_selecionado
 
     def _construir_mapeamento_disciplina(self):
-        """Constrói dicionário disciplina_id → nome da disciplina."""
-        disciplinas = api.listar_disciplinas()
-        return {d["id"]: d["nome"] for d in disciplinas}
+        """Constrói dicionário disciplina_id → nome da disciplina garantindo chaves int e str."""
+        try:
+            disciplinas = api.listar_disciplinas()
+            mapa = {}
+            for d in disciplinas:
+                mapa[d["id"]] = d["nome"]
+                mapa[str(d["id"])] = d["nome"]
+            return mapa
+        except Exception:
+            return {}

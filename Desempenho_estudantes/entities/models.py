@@ -56,9 +56,10 @@ class Turma(db.Model):
 class MatriculaTurma(db.Model):
     __tablename__ = 'matriculas_turma'
     id = db.Column(db.Integer, primary_key=True)
-    estudante_id = db.Column(db.Integer, db.ForeignKey('estudantes.id'), nullable=False)
+    # Mapeamento com nomes reais das colunas no PostgreSQL: 'estudantes_id' e 'frequencia_percetual'
+    estudante_id = db.Column('estudantes_id', db.Integer, db.ForeignKey('estudantes.id'), nullable=False)
     turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=False)
-    frequencia_percentual = db.Column(db.Numeric(5, 2), nullable=False, default=100.00)
+    frequencia_percentual = db.Column('frequencia_percetual', db.Numeric(5, 2), nullable=False, default=100.00)
     risco_falta = db.Column(db.Boolean, nullable=False, default=False)
     risco_nota = db.Column(db.Boolean, nullable=False, default=False)
     data_registro = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
